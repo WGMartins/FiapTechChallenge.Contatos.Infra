@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kong
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kong
+  template:
+    metadata:
+      labels:
+        app: kong
+    spec:
+      containers:
+        - name: kong
+          image: kong/kong-gateway:latest
+          ports:
+            - containerPort: 8000   # Proxy HTTP
+            - containerPort: 8443   # Proxy HTTPS
+            - containerPort: 8001   # Admin API HTTP
+            - containerPort: 8444   # Admin API HTTPS
+            - containerPort: 8002   # Kong Manager HTTP
+          env:
+            - name: KONG_DATABASE
+              value: postgres
+            - name: KONG_PG_HOST
+              value: kong-db
+            - name: KONG_PG_DATABASE
+              value: kong
+            - name: KONG_PG_USER
+              value: kong
+            - name: KONG_PG_PASSWORD
+              value: kong
+            - name: KONG_ADMIN_LISTEN
+              value: "0.0.0.0:8001, 0.0.0.0:8444 ssl"
+            - name: KONG_PORTAL
+              value: "on"
+            - name: KONG_PORTAL_GUI_HOST
+              value: "localhost:8002"
+            - name: KONG_PORTAL_GUI_PROTOCOL
+              value: "http"
+            - name: KONG_PROXY_ACCESS_LOG
+              value: "/dev/stdout"
+            - name: KONG_ADMIN_ACCESS_LOG
+              value: "/dev/stdout"
+            - name: KONG_PROXY_ERROR_LOG
+              value: "/dev/stderr"
+            - name: KONG_ADMIN_ERROR_LOG
+              value: "/dev/stderr"
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 8000
+    name: "8000"
+    targetPort: 8000
+  - port: 8001
+    name: "8001"
+    targetPort: 8001
+  - port: 8002
+    name: "8002"
+    targetPort: 8002
+  - port: 8443
+    name: "8443"
+    targetPort: 8443
+  - port: 8444
+    name: "8444"
+    targetPort: 8444
+  selector:
+    app: kong
